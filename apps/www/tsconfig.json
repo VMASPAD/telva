@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "resolveJsonModule": true,
+    "target": "es6",
+    "lib": ["dom", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "emitDeclarationOnly": false,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "types": ["node", "react", "react-dom"],
+    "paths": {
+      "~*": ["./*"],
+      "telva-core": ["../../packages/core"],
+      "telva": ["../../packages/telva"]
+    }
+  },
+  "references": [
+    {
+      "path": "../../packages/vec"
+    },
+    {
+      "path": "../../packages/intersect"
+    },
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/telva"
+    }
+  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}

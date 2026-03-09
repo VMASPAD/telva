@@ -1,0 +1,38 @@
+{
+  "version": "1.1.0",
+  "name": "telva-intersect",
+  "description": "2D intersection utilities for Telva and maybe you, too.",
+  "author": "@vmaspad",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VMASPAD/telva.git"
+  },
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "2d",
+    "vector",
+    "intersection",
+    "typescript",
+    "javascript"
+  ],
+  "files": [
+    "dist/**/*"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "source": "./src/index.ts",
+  "scripts": {
+    "dev": "yarn lfg -d",
+    "build": "yarn lfg",
+    "lint": "TIMING=1 eslint src/ --ext .ts,.tsx",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "dependencies": {
+    "telva-vec": "^1.1.0"
+  },
+  "devDependencies": {
+    "@tldraw/lfg": "latest"
+  },
+  "gitHead": "4b1137849ad07da36fc8f0f19cb64e7535a79296"
+}

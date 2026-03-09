@@ -53,9 +53,6 @@ export const AlertDialog = ({ container }: { container: any }) => {
 
   return (
     <AlertDialogRoot open={dialogState !== null}>
-      <AlertDialogPrimitive.AlertDialogTitle>
-        <FormattedMessage id="dialog.confirm" />
-      </AlertDialogPrimitive.AlertDialogTitle>
       <AlertDialogContent onClose={() => setDialogState(null)} container={container}>
         {dialogState && (
           <AlertDialogDescription>{descriptions[dialogState]}</AlertDialogDescription>

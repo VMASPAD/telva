@@ -22,4 +22,13 @@ export const REACT_COMPONENTS: ReactComponentEntry[] = [
     previewColor: '#7B2FFF',
     component: ASCIIText,
   },
+  {
+    id: "button",
+    name: "Button",
+    description: "A customizable button component.",
+    defaultSize: [400, 300],
+    previewColor: "#FF5733",
+    component: () => <button style={{}}>Click Me</button>,
+    sourcePath: "",
+  }
 ]

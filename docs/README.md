@@ -34,6 +34,14 @@ This directory contains the project documentation, organized by category.
   - `02-build-configuration.md`
   - `03-file-inventory.md`
 
+## Fumadocs MDX set
+
+A dedicated Fumadocs-compatible MDX documentation tree is available at:
+
+- `docs/fumadocs/content/docs/`
+
+This set contains technical integration guides, API reference pages, extension patterns, and troubleshooting content in English.
+
 ## Recommended reading order
 
 1. `00-general/00-summary.md`

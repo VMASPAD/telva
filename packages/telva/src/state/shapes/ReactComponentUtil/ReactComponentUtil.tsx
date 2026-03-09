@@ -40,6 +40,12 @@ function hasUnsupportedColorFunction(value: string) {
   return UNSUPPORTED_COLOR_FUNCTION_PATTERN.test(value)
 }
 
+function isUnsupportedColorFunctionError(error: unknown) {
+  if (!error) return false
+  const message = error instanceof Error ? error.message : String(error)
+  return /unsupported color function/i.test(message)
+}
+
 function getElementTree(root: Element): Element[] {
   const elements: Element[] = [root]
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
@@ -63,7 +69,18 @@ function resolveCssPropertyValue(probe: HTMLDivElement, property: string, value:
     return resolved
   }
 
-  if (property === 'color' || property === 'fill' || property === 'stroke' || property === 'stop-color') {
+  if (property === 'background-color') {
+    return 'rgb(255, 255, 255)'
+  }
+
+  if (
+    property === 'color' ||
+    property === 'fill' ||
+    property === 'stroke' ||
+    property === 'stop-color' ||
+    property === 'flood-color' ||
+    property === 'lighting-color'
+  ) {
     return 'rgb(0, 0, 0)'
   }
 
@@ -168,7 +185,7 @@ export class ReactComponentUtil extends TVShapeUtil<T, E> {
             pointerEvents: 'all',
           }}
         >
-          <LiveReactComponent componentId={componentId} width={size[0]} height={size[1]} />
+          <LiveReactComponent componentId={componentId} />
         </div>
       </HTMLContainer>
     )
@@ -205,7 +222,7 @@ export class ReactComponentUtil extends TVShapeUtil<T, E> {
   transform = transformRectangle
   transformSingle = transformSingleRectangle
 
-  getSvgElement = async (shape: T, isDarkMode: boolean): Promise<SVGElement | void> => {
+  getSvgElement = async (shape: T, _isDarkMode: boolean): Promise<SVGElement | void> => {
     // Attempt to capture the component directly
     const wrapper = document.getElementById(`${shape.id}_react_component`)
     if (!wrapper) return
@@ -247,19 +264,35 @@ export class ReactComponentUtil extends TVShapeUtil<T, E> {
         clonedWrapper.style.pointerEvents = 'none'
         clone.appendChild(clonedWrapper)
 
-        sanitizeCloneStylesForHtml2Canvas(wrapper, clonedWrapper)
         document.body.appendChild(clone)
 
         try {
-          const html2canvas = (await import('html2canvas')).default
-          const captured = await html2canvas(clone, {
-            width,
-            height,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-          })
-          dataUrl = captured.toDataURL('image/png')
+          const html2canvas = (await import('html2canvas-pro')).default
+          try {
+            const captured = await html2canvas(clone, {
+              width,
+              height,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+            })
+            dataUrl = captured.toDataURL('image/png')
+          } catch (error) {
+            if (!isUnsupportedColorFunctionError(error)) {
+              throw error
+            }
+
+            sanitizeCloneStylesForHtml2Canvas(wrapper, clonedWrapper)
+
+            const captured = await html2canvas(clone, {
+              width,
+              height,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+            })
+            dataUrl = captured.toDataURL('image/png')
+          }
         } finally {
           document.body.removeChild(clone)
         }
@@ -285,12 +318,8 @@ export class ReactComponentUtil extends TVShapeUtil<T, E> {
  */
 function LiveReactComponent({
   componentId,
-  width,
-  height,
 }: {
   componentId: string
-  width: number
-  height: number
 }) {
   const registry = useReactRegistry()
   const entry = React.useMemo(

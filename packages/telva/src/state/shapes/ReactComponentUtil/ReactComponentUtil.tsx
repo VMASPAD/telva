@@ -14,6 +14,107 @@ import { ReactComponentShape, TVMeta, TVShapeType } from '~types'
 type T = ReactComponentShape
 type E = HTMLDivElement
 
+const UNSUPPORTED_COLOR_FUNCTION_PATTERN = /\b(?:lab|lch|oklab|oklch|color)\(/i
+
+const COLOR_STYLE_PROPERTIES = [
+  'color',
+  'background-color',
+  'border-top-color',
+  'border-right-color',
+  'border-bottom-color',
+  'border-left-color',
+  'outline-color',
+  'text-decoration-color',
+  'caret-color',
+  'column-rule-color',
+  'fill',
+  'stroke',
+  'stop-color',
+  'flood-color',
+  'lighting-color',
+]
+
+const COMPLEX_STYLE_PROPERTIES = ['background-image', 'box-shadow', 'text-shadow', 'filter']
+
+function hasUnsupportedColorFunction(value: string) {
+  return UNSUPPORTED_COLOR_FUNCTION_PATTERN.test(value)
+}
+
+function getElementTree(root: Element): Element[] {
+  const elements: Element[] = [root]
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
+
+  let current = walker.nextNode()
+  while (current) {
+    elements.push(current as Element)
+    current = walker.nextNode()
+  }
+
+  return elements
+}
+
+function resolveCssPropertyValue(probe: HTMLDivElement, property: string, value: string) {
+  probe.style.removeProperty(property)
+  probe.style.setProperty(property, value)
+  const resolved = window.getComputedStyle(probe).getPropertyValue(property).trim()
+  probe.style.removeProperty(property)
+
+  if (resolved && !hasUnsupportedColorFunction(resolved)) {
+    return resolved
+  }
+
+  if (property === 'color' || property === 'fill' || property === 'stroke' || property === 'stop-color') {
+    return 'rgb(0, 0, 0)'
+  }
+
+  return 'rgba(0, 0, 0, 0)'
+}
+
+function sanitizeCloneStylesForHtml2Canvas(sourceRoot: HTMLElement, targetRoot: HTMLElement) {
+  const sourceElements = getElementTree(sourceRoot)
+  const targetElements = getElementTree(targetRoot)
+  const count = Math.min(sourceElements.length, targetElements.length)
+
+  const probe = document.createElement('div')
+  probe.style.position = 'fixed'
+  probe.style.left = '-99999px'
+  probe.style.top = '-99999px'
+  probe.style.opacity = '0'
+  probe.style.pointerEvents = 'none'
+  document.body.appendChild(probe)
+
+  try {
+    for (let i = 0; i < count; i++) {
+      const sourceElement = sourceElements[i] as HTMLElement
+      const targetElement = targetElements[i] as HTMLElement
+      const computed = window.getComputedStyle(sourceElement)
+
+      for (const property of COLOR_STYLE_PROPERTIES) {
+        const computedValue = computed.getPropertyValue(property).trim()
+        if (!computedValue) continue
+
+        const nextValue = hasUnsupportedColorFunction(computedValue)
+          ? resolveCssPropertyValue(probe, property, computedValue)
+          : computedValue
+
+        targetElement.style.setProperty(property, nextValue)
+      }
+
+      for (const property of COMPLEX_STYLE_PROPERTIES) {
+        const computedValue = computed.getPropertyValue(property).trim()
+        if (!computedValue) continue
+
+        targetElement.style.setProperty(
+          property,
+          hasUnsupportedColorFunction(computedValue) ? 'none' : computedValue
+        )
+      }
+    }
+  } finally {
+    document.body.removeChild(probe)
+  }
+}
+
 export class ReactComponentUtil extends TVShapeUtil<T, E> {
   type = TVShapeType.ReactComponent as const
 
@@ -138,8 +239,15 @@ export class ReactComponentUtil extends TVShapeUtil<T, E> {
           `z-index:-9999`,
           `pointer-events:none`,
         ].join(';')
-        // Copy rendered DOM content (static snapshot is enough for export)
-        clone.innerHTML = wrapper.innerHTML
+        const clonedWrapper = wrapper.cloneNode(true) as HTMLDivElement
+        clonedWrapper.removeAttribute('id')
+        clonedWrapper.style.width = `${width}px`
+        clonedWrapper.style.height = `${height}px`
+        clonedWrapper.style.opacity = '1'
+        clonedWrapper.style.pointerEvents = 'none'
+        clone.appendChild(clonedWrapper)
+
+        sanitizeCloneStylesForHtml2Canvas(wrapper, clonedWrapper)
         document.body.appendChild(clone)
 
         try {
